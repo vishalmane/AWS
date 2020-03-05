@@ -1,0 +1,8 @@
+Auto Scaling
+1. create VPC
+2. Create Launch configuration (Use same security group as VPC also check inbound and outbound rule source if source is vpc, then instance is only accesible from VPC)
+3. Create Auto scaling groups
+4. create Target group
+5. set target group in auto scaling group
+6. create load balancer
+7. set target group in load balancer
