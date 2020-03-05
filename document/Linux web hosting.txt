@@ -1,0 +1,17 @@
+Linux web hosting
+1. install scp -> [ec2-user ~]$ sudo yum install -y openssh-clients
+2. install APACHI -> $ sudo yum -y install httpd
+3. start service ->$ sudo service httpd start  
+4. Create deployment folder ->$ sudo mkdir /var/www/html/efs-mount-point
+5. Add inbound rule for http port 80
+6. Make a subdirectory for sampledir and change the ownership. And change directory so you can create files in the sampledir subdirectory.
+	$ cd /var/www/html/efs-mount-point 
+	$  sudo mkdir sampledir  
+	$  sudo chown  ec2-user sampledir
+	$  sudo chmod -R o+r sampledir
+	$  cd sampledir    
+	
+	sudo chkconfig httpd on (To start service on EC2 start)
+7. Create html
+	$ echo "<html><h1>Hello from Amazon EFS</h1></html>" > hello.html    
+8. test http://EC2-instance-public-DNS/efs-mount-point/sampledir/hello.html
