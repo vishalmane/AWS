@@ -38,3 +38,36 @@ public abstract class ShellServiceTimer
         protected internal abstract void CallBack(object source);
 
     }
+    
+    
+     public class ServiceMonitorTimer : ShellServiceTimer
+    {
+        internal IShellServiceMonitor shellServiceMonitor;
+
+        internal IShellServiceMonitor ShellServiceMonitor
+        {
+            get { return shellServiceMonitor ?? (shellServiceMonitor = new ShellServiceMonitor()); }
+            set { shellServiceMonitor = value; }
+        }
+
+        public ServiceMonitorTimer(int timeout) : base(timeout)
+        {
+        }
+
+        protected override void CallBack(object source)
+        {
+            try
+            {
+                this.StopTimer();
+                ShellServiceMonitor.StartInActiveServices();
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+            finally
+            {
+                this.StartTimer();
+            }
+        }
+    }
