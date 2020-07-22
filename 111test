@@ -1,161 +1,40 @@
-  public class IntegrationTest : IClassFixture<TestContext>
+public abstract class ShellServiceTimer
     {
-        readonly TestContext testContext;
-        private string GetUrl(string resourecUrl)
-        {
-            return testContext.BaseUrl + "Api/" + resourecUrl;
-        }
-        public IntegrationTest(TestContext testContext)
-        {
-            this.testContext = testContext;
-            testContext.Authenticate(GetLoginInputParam());
-        }
+        System.Threading.Timer _timer = null;
 
-        public virtual LoginInput GetLoginInputParam()
+        private readonly int _timeout = 0;
+        protected ShellServiceTimer(int timeout)
         {
-            return null;
+            _timeout = timeout * 1000;
         }
-
-        private HttpClient CreateClient()
+        public virtual void StartTimer()
         {
-            var client = new HttpClient() { Timeout = TimeSpan.FromMinutes(5) };
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", testContext.Token);
-            client.DefaultRequestHeaders.Add("UnitTestCaseTransaction", "true");
-            return client;
-        }
-
-        private JsonMediaTypeFormatter GetFormatter()
-        {
-            return new JsonMediaTypeFormatter
+            try
             {
-                SerializerSettings = { ContractResolver = new CamelCasePropertyNamesContractResolver() },
-                UseDataContractJsonSerializer = false
-            };
-        }
-
-        /// <summary>
-        /// GetRequest will call api and return response of type T
-        /// Following things are missing because Api design is not ready
-        /// 1. No validations for type T
-        /// 2. No error message or worning return if in case of no reply  or any failure from API
-        /// </summary>
-        /// <typeparam name="ApiActionResult"></typeparam>
-        /// <param name="resourceUrl"></param>
-        /// <returns></returns>
-        public ApiActionResult<TResponse> GetRequest<TResponse>(string resourceUrl)
-        {
-            using (var client = CreateClient())
+                StopTimer();
+                _timer = new System.Threading.Timer(CallBack, Thread.CurrentThread.CurrentCulture, _timeout, Timeout.Infinite);
+            }
+            catch (Exception ex)
             {
-                var response = client.GetAsync(GetUrl(resourceUrl)).Result;
-                var result = response.Content.ReadAsAsync<ApiActionResult<TResponse>>().Result;
-                return result;
+                Console.WriteLine(ex.Message + Environment.NewLine + ex.StackTrace);
             }
         }
-        /// <summary>
-        /// GetRequest will call api and return response of type T
-        /// Following things are missing because Api design is not ready
-        /// 1. No validations for type T
-        /// 2. No error message or worning return if in case of no reply  or any failure from API
-        /// </summary>
-        /// <typeparam name="ApiActionResult"></typeparam>
-        /// <param name="resourceUrl"></param>
-        /// <returns></returns>
-        public ApiActionResult<TResponse> GetRequest<TRequest, TResponse>(string resourceUrl, TRequest request)
+        public virtual void StopTimer()
         {
-            var uri = BuildURLParametersString(request);
-            return GetRequest<TResponse>(resourceUrl + uri);
-        }
-        public string BuildURLParametersString<T>(T obj)
-        {
-            var parameters = ObjectToDictionaryHelper.ToDictionary(obj);
-            UriBuilder uriBuilder = new UriBuilder();
-            var query = HttpUtility.ParseQueryString(uriBuilder.Query);
-            foreach (var urlParameter in parameters)
+            try
             {
-                if (urlParameter.Value != null)
-                    query[urlParameter.Key] = urlParameter.Value.ToString();
+                if (_timer != null)
+                {
+                    _timer.Dispose();
+                    _timer = null;
+                }
             }
-            uriBuilder.Query = query.ToString();
-            return uriBuilder.Query;
-        }
-        /// <summary>
-        /// PostRequest will post content to api and return response 
-        /// Following things are missing because Api design is not ready
-        /// 1. No validations for type TContent and TData
-        /// 2. No error message or worning return if in case of no reply  or any failure from API
-        /// </summary>
-        /// <typeparam name="TRequest"></typeparam>
-        /// <typeparam name="ApiActionResult"></typeparam>
-        /// <param name="resourceUrl"></param>
-        /// <param name="content"></param>
-        /// <returns></returns>
-        public ApiActionResult<TResponse> PostRequest<TRequest, TResponse>(string resourceUrl, TRequest content)
-        {
-            using (var client = CreateClient())
+            catch (Exception ex)
             {
-               
-                var response = client.PostAsync(GetUrl(resourceUrl),
-                new ObjectContent<TRequest>(content, GetFormatter())).Result;
-                var result = response.Content.ReadAsAsync<ApiActionResult<TResponse>>().Result;
-                return result;
-            }
-        }
-        /// <summary>
-        /// PostRequest will post content to api and return response 
-        /// Following things are missing because Api design is not ready
-        /// 1. No validations for type TContent and TData
-        /// 2. No error message or warning return if in case of no reply or any failure from API
-        /// </summary>
-        /// <typeparam name="TResponse"></typeparam>
-        /// <param name="resourceUrl"></param>
-        /// <param name="content"></param>
-        /// <returns></returns>
-        public ApiActionResult<TResponse> PostRequest<TResponse>(string resourceUrl, HttpContent content)
-        {
-            using (var client = CreateClient())
-            {
-                var response = client.PostAsync(GetUrl(resourceUrl), content).Result;
-                var result = response.Content.ReadAsAsync<ApiActionResult<TResponse>>().Result;
-                return result;
+                Console.WriteLine(ex.Message + Environment.NewLine + ex.StackTrace);
             }
         }
 
-        /// <summary>
-        /// DeleteRequest will call api and return response 
-        /// Following things are missing because Api design is not ready
-        /// 1. No validations for type TData
-        /// 2. No error message or worning return if in case of no reply  or any failure from API
-        /// </summary>
-        /// <typeparam name="ApiActionResult"></typeparam>
-        /// <param name="resourceUrl"></param>
-        /// <returns></returns>
-        public ApiActionResult<TResponse> DeleteRequest<TResponse>(string resourceUrl)
-        {
-            using (var client = CreateClient())
-            {
-                var response = client.DeleteAsync(GetUrl(resourceUrl)).Result;
-                var result = response.Content.ReadAsAsync<ApiActionResult<TResponse>>().Result;
-                return result;
-            }
-        }
-        /// <summary>
-        /// PutRequest will call api and return response 
-        /// Following things are missing because Api design is not ready
-        /// 1. No validations for type TData
-        /// 2. No error message or worning return if in case of no reply  or any failure from API
-        /// </summary>
-        /// <typeparam name="TRequest"></typeparam>
-        /// <typeparam name="ApiActionResult"></typeparam>
-        /// <param name="resourceUrl"></param>
-        /// <param name="content"></param>
-        /// <returns></returns>
-        public ApiActionResult<TResponse> PutRequest<TRequest,TResponse>(string resourceUrl, TRequest content)
-        {
-            using (var client = CreateClient())
-            {
-                var response = client.PutAsync(GetUrl(resourceUrl), new ObjectContent<TRequest>(content, GetFormatter())).Result;
-                var result = response.Content.ReadAsAsync<ApiActionResult<TResponse>>().Result;
-                return result;
-            }
-        }
+        protected internal abstract void CallBack(object source);
+
     }
